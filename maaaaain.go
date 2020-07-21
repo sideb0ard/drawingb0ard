@@ -1,6 +1,7 @@
 package main
 
 import (
+	//"fmt"
 	"math"
 	"math/rand"
 	"os"
@@ -65,7 +66,7 @@ func squiggle(radius float64, length float64) []Point {
 	return points
 }
 
-func main() {
+func ten_lines_of_squiggles() {
 	width := 500
 	height := 500
 	canvas := svg.New(os.Stdout)
@@ -89,7 +90,8 @@ func main() {
 
 			var squiggly_line []Point = squiggle(10, 100)
 			x_pos, y_pos := split_points_slice(squiggly_line, cur_x+offset, cur_y)
-			canvas.Polyline(x_pos, y_pos)
+			// canvas.Polyline(x_pos, y_pos)
+			canvas.Polygon(x_pos, y_pos)
 
 		}
 		cur_x += incr
@@ -98,4 +100,89 @@ func main() {
 	}
 
 	canvas.End()
+}
+
+func make_squiggle_alphabet_and_numberline(div float64) [][]Point {
+	dictionary := make([][]Point, 26+10) // alphanumeric
+	for i := range dictionary {
+		dictionary[i] = squiggle(div, 100)
+	}
+	return dictionary
+}
+func highpoint_lowlife() {
+	width := 500
+	height := 500
+	canvas := svg.New(os.Stdout)
+	canvas.Start(width, height)
+
+	text_to_use := "the highpoint lowlife radio"
+	//fmt.Println(text_to_use)
+
+	text_len := len(text_to_use)
+	//fmt.Println(text_to_use, text_len)
+
+	div := 10
+	incr := width / div
+	alphabet := make_squiggle_alphabet_and_numberline(float64(incr))
+
+	text_idx := 0
+	for i := 0; i < div; i++ {
+
+		for j := 0; j < div; j++ {
+			char_to_print := text_to_use[text_idx]
+			text_idx++
+			if text_idx >= text_len {
+				text_idx = 0
+			}
+
+			if char_to_print == ' ' {
+				// no-op
+			} else {
+
+				x := i*incr + (incr / 2)
+				y := j*incr + (incr / 2)
+				squiggly_line := alphabet[char_to_print-'a']
+				x_pos, y_pos := split_points_slice(squiggly_line, x, y)
+				canvas.Polyline(x_pos, y_pos)
+
+				//fmt.Println("X:", i*incr, "Y:", j*incr+incr, "Char:", string(char_to_print), char_to_print-'a')
+			}
+		}
+	}
+
+	canvas.End()
+}
+
+func golden_ratio() {
+	width := 500
+	height := 500
+	canvas := svg.New(os.Stdout)
+	canvas.Start(width, height)
+
+	golden_ratio_percent := 61.8
+
+	cur_width := float64(width)
+	cur_x := int(cur_width - (cur_width / 100. * golden_ratio_percent))
+	cur_y := cur_x
+	for i := 0; i < 27; i++ {
+		big_bit := cur_width / 100.0 * golden_ratio_percent
+		wee_bit := cur_width - big_bit
+		//fmt.Println("X:", cur_x, " Y:", cur_y, " BIG:", big_bit, " WEE:", wee_bit)
+		for j := 0; j < width/(int(wee_bit)+1); j++ {
+			var squiggly_line []Point = squiggle(wee_bit+10, big_bit)
+			x_pos, y_pos := split_points_slice(squiggly_line, cur_x, cur_y)
+			canvas.Polyline(x_pos, y_pos)
+			cur_y += 10 + int(wee_bit*big_bit)
+			cur_y = cur_y % width
+		}
+		cur_width = big_bit
+		cur_x += 10 + int(big_bit)
+		cur_x = cur_x % height
+	}
+
+	canvas.End()
+}
+
+func main() {
+	golden_ratio()
 }
