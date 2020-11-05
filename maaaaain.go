@@ -1,13 +1,22 @@
 package main
 
 import (
-	//"fmt"
+	"fmt"
 	"math"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/ajstarks/svgo"
+)
+
+var (
+	width  = 700
+	height = 700
+	canvas = svg.New(os.Stdout)
+	s1     = rand.NewSource(time.Now().UnixNano())
+	r1     = rand.New(s1)
 )
 
 type Point struct {
@@ -48,8 +57,8 @@ func squiggle(radius float64, length float64) []Point {
 	current_length := 0.
 	current_angle := 0.
 
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
+	//s1 := rand.NewSource(time.Now().UnixNano())
+	//r1 := rand.New(s1)
 
 	// points = append(points, Point{radius, 0})
 	for current_length < length {
@@ -109,6 +118,7 @@ func make_squiggle_alphabet_and_numberline(div float64) [][]Point {
 	}
 	return dictionary
 }
+
 func highpoint_lowlife() {
 	width := 500
 	height := 500
@@ -183,6 +193,53 @@ func golden_ratio() {
 	canvas.End()
 }
 
+func circz(x, y, num int) {
+	for i := 1; i < num; i++ {
+		canvas.Circle(x, y, i*20, "fill:none; stroke:red")
+	}
+}
+
+func drawSquig(x int, y int, rad float64, lennt float64) {
+	for i := 1; i < 7; i++ {
+		colors := [...]string{"black", "greenyellow", "black"}
+		rand_color := colors[r1.Intn(len(colors))]
+		var squiggly_line []Point = squiggle(rad, lennt)
+		x_pos, y_pos := split_points_slice(squiggly_line, x, y)
+		canvas.Polyline(x_pos, y_pos, "fill:none; stroke:"+rand_color)
+	}
+}
+
 func main() {
-	golden_ratio()
+	//ten_lines_of_squiggles();
+	//golden_ratio();
+
+	//canvas = svg.New(os.Stdout)
+	canvas.Start(width, height)
+	canvas.RGB(0, 0, 0)
+
+	//circz(width/2, height/2, 10);
+	//circz(0, 0, 20);
+	num_draws := r1.Intn(18) + 3
+	//fmt.Printf("NUM DRAWS is %d", num_draws)
+	incr := width / num_draws
+	//fmt.Printf("INCR is %d", incr)
+
+	for i := 0; i < num_draws; i++ {
+		randy := r1.Intn(10)
+		if randy < 3 {
+			incr *= 2
+		} else if randy < 7 {
+			i = (r1.Intn(num_draws))
+		}
+		drawSquig(i*incr, i*incr, float64(i*10+10), float64((i*4+1)*100))
+		for k := num_draws - (num_draws - i); k < num_draws; k = k + incr {
+			fmt.Println("DRAW! ", k)
+			drawSquig(k, k*incr, float64(k*3+12), float64((i*4+1)*100))
+		}
+	}
+
+	colors := [...]string{"chartreuse", "greenyellow", "lawngreen", "fuchsia", "yello"}
+	rand_color := colors[r1.Intn(len(colors))]
+	canvas.Grid(0, 0, width, height, 10, "stroke:"+rand_color+"; opacity:0.1i; stroke-width="+strconv.Itoa(r1.Intn(10)))
+	canvas.End()
 }
