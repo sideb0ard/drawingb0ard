@@ -2,19 +2,19 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/ajstarks/svgo"
+	svg "github.com/ajstarks/svgo"
 )
 
 var (
 	width  = 700
 	height = 700
-	canvas = svg.New(os.Stdout)
 	s1     = rand.NewSource(time.Now().UnixNano())
 	r1     = rand.New(s1)
 )
@@ -75,171 +75,94 @@ func squiggle(radius float64, length float64) []Point {
 	return points
 }
 
-func ten_lines_of_squiggles() {
-	width := 500
-	height := 500
-	canvas := svg.New(os.Stdout)
-	canvas.Start(width, height)
-
-	div := 10
-	draw_count := div
-	incr := width / div
-
-	cur_x := 0
-	cur_y := incr
-
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
-
-	for i := 0; i < div; i++ {
-		offset := 0
-		for j := 0; j < draw_count; j++ {
-			offset += r1.Intn(incr)
-			//  fmt.Println("Drawing", draw_count, "at ", cur_x+offset, cur_y)
-
-			var squiggly_line []Point = squiggle(10, 100)
-			x_pos, y_pos := split_points_slice(squiggly_line, cur_x+offset, cur_y)
-			// canvas.Polyline(x_pos, y_pos)
-			canvas.Polygon(x_pos, y_pos)
-
-		}
-		cur_x += incr
-		cur_y += incr
-		draw_count--
-	}
-
-	canvas.End()
+type LineProperty struct {
+	length float64
+	angle  float64
 }
 
-func make_squiggle_alphabet_and_numberline(div float64) [][]Point {
-	dictionary := make([][]Point, 26+10) // alphanumeric
-	for i := range dictionary {
-		dictionary[i] = squiggle(div, 100)
-	}
-	return dictionary
+func propertiesOfLine(start, end Point) LineProperty {
+	lengthX := end.x - start.x
+	lengthY := end.y - start.y
+	return LineProperty{math.Sqrt(math.Pow(lengthX, 2) + math.Pow(lengthY, 2)), math.Atan2(lengthY, lengthX)}
 }
 
-func highpoint_lowlife() {
-	width := 500
-	height := 500
-	canvas := svg.New(os.Stdout)
-	canvas.Start(width, height)
+// https://medium.com/@francoisromain/smooth-a-svg-path-with-cubic-bezier-curves-e37b49d46c74
+func controlPoint(current Point, previous Point, next Point, reverse bool) Point {
 
-	text_to_use := "the highpoint lowlife radio"
-	//fmt.Println(text_to_use)
-
-	text_len := len(text_to_use)
-	//fmt.Println(text_to_use, text_len)
-
-	div := 10
-	incr := width / div
-	alphabet := make_squiggle_alphabet_and_numberline(float64(incr))
-
-	text_idx := 0
-	for i := 0; i < div; i++ {
-
-		for j := 0; j < div; j++ {
-			char_to_print := text_to_use[text_idx]
-			text_idx++
-			if text_idx >= text_len {
-				text_idx = 0
-			}
-
-			if char_to_print == ' ' {
-				// no-op
-			} else {
-
-				x := i*incr + (incr / 2)
-				y := j*incr + (incr / 2)
-				squiggly_line := alphabet[char_to_print-'a']
-				x_pos, y_pos := split_points_slice(squiggly_line, x, y)
-				canvas.Polyline(x_pos, y_pos)
-
-				//fmt.Println("X:", i*incr, "Y:", j*incr+incr, "Char:", string(char_to_print), char_to_print-'a')
-			}
-		}
+	p := previous
+	if p.x == 0 && p.y == 0 {
+		p = current
 	}
+	n := next
+	if n.x == 0 && n.y == 0 {
+		n = current
+	}
+	const smoothing = 0.2
+	o := propertiesOfLine(p, n)
+	angle := o.angle
+	if reverse {
+		angle += math.Pi
+	}
+	length := o.length * smoothing
+	x := current.x + math.Cos(angle)*length
+	y := current.y + math.Sin(angle)*length
+	return Point{x, y}
 
-	canvas.End()
 }
 
-func golden_ratio() {
-	width := 500
-	height := 500
-	canvas := svg.New(os.Stdout)
-	canvas.Start(width, height)
+func drawSquig(x int, y int, rad float64, lennt float64, canvas *svg.SVG, color string) {
+	//colors := [...]string{"black", "greenyellow", "black"}
+	//rand_color := colors[r1.Intn(len(colors))]
+	//rand_color := colors[0]
+	var squiggly_line []Point = squiggle(rad, lennt)
+	x_pos, y_pos := split_points_slice(squiggly_line, x, y)
+	//fmt.Printf("LEN OF POINTS IS %d\n", len(squiggly_line))
+	for i := 0; i < len(squiggly_line); i++ {
 
-	golden_ratio_percent := 61.8
+		fmt.Printf("X: %d, Y: %d\n", x_pos[i], y_pos[i])
 
-	cur_width := float64(width)
-	cur_x := int(cur_width - (cur_width / 100. * golden_ratio_percent))
-	cur_y := cur_x
-	for i := 0; i < 27; i++ {
-		big_bit := cur_width / 100.0 * golden_ratio_percent
-		wee_bit := cur_width - big_bit
-		//fmt.Println("X:", cur_x, " Y:", cur_y, " BIG:", big_bit, " WEE:", wee_bit)
-		for j := 0; j < width/(int(wee_bit)+1); j++ {
-			var squiggly_line []Point = squiggle(wee_bit+10, big_bit)
-			x_pos, y_pos := split_points_slice(squiggly_line, cur_x, cur_y)
-			canvas.Polyline(x_pos, y_pos)
-			cur_y += 10 + int(wee_bit*big_bit)
-			cur_y = cur_y % width
-		}
-		cur_width = big_bit
-		cur_x += 10 + int(big_bit)
-		cur_x = cur_x % height
+		// start control point
+		//const [cpsX, cpsY] = controlPoint(a[i - 1], a[i - 2], point)
+		// end control point
+		//const [cpeX, cpeY] = controlPoint(point, a[i - 1], a[i + 1], true)
 	}
-
-	canvas.End()
+	canvas.Polyline(x_pos, y_pos, "fill:none; stroke:"+color)
 }
 
-func circz(x, y, num int) {
-	for i := 1; i < num; i++ {
-		canvas.Circle(x, y, i*20, "fill:none; stroke:red")
+func OpenCreateFile(filename string) *os.File {
+	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0755)
+	if err != nil {
+		log.Fatal(err)
 	}
-}
-
-func drawSquig(x int, y int, rad float64, lennt float64) {
-	for i := 1; i < 7; i++ {
-		colors := [...]string{"black", "greenyellow", "black"}
-		rand_color := colors[r1.Intn(len(colors))]
-		var squiggly_line []Point = squiggle(rad, lennt)
-		x_pos, y_pos := split_points_slice(squiggly_line, x, y)
-		canvas.Polyline(x_pos, y_pos, "fill:none; stroke:"+rand_color)
-	}
+	return f
 }
 
 func main() {
-	//ten_lines_of_squiggles();
-	//golden_ratio();
 
-	//canvas = svg.New(os.Stdout)
+	colors := [...]string{"chartreuse", "greenyellow", "lawngreen", "fuchsia", "yello", "black"}
+	// num_draws := r1.Intn(18) + 3
+	// num_draws := 3
+	num_squigs := 3
+	incr := width / num_squigs
+
+	//for i := 0; i < num_draws; i++ {
+
+	//fname := "blah" + strconv.Itoa(i) + ".svg"
+	fname := "blah.svg"
+	f := OpenCreateFile(fname)
+
+	canvas := svg.New(f)
 	canvas.Start(width, height)
 	canvas.RGB(0, 0, 0)
 
-	//circz(width/2, height/2, 10);
-	//circz(0, 0, 20);
-	num_draws := r1.Intn(18) + 3
-	//fmt.Printf("NUM DRAWS is %d", num_draws)
-	incr := width / num_draws
-	//fmt.Printf("INCR is %d", incr)
-
-	for i := 0; i < num_draws; i++ {
-		randy := r1.Intn(10)
-		if randy < 3 {
-			incr *= 2
-		} else if randy < 7 {
-			i = (r1.Intn(num_draws))
-		}
-		drawSquig(i*incr, i*incr, float64(i*10+10), float64((i*4+1)*100))
-		for k := num_draws - (num_draws - i); k < num_draws; k = k + incr {
-			fmt.Println("DRAW! ", k)
-			drawSquig(k, k*incr, float64(k*3+12), float64((i*4+1)*100))
-		}
+	for j := 0; j < num_squigs; j++ {
+		drawSquig(j*incr+10, j*incr+10, float64(50), float64(500), canvas, colors[3])
+		drawSquig(width-j*incr, height-j*incr+50, float64(10), float64(1500), canvas, colors[5])
 	}
 
-	colors := [...]string{"chartreuse", "greenyellow", "lawngreen", "fuchsia", "yello"}
 	rand_color := colors[r1.Intn(len(colors))]
 	canvas.Grid(0, 0, width, height, 10, "stroke:"+rand_color+"; opacity:0.1i; stroke-width="+strconv.Itoa(r1.Intn(10)))
+
 	canvas.End()
+	//}
 }
