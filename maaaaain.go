@@ -6,7 +6,6 @@ import (
 	"math"
 	"math/rand"
 	"os"
-	"strconv"
 	"time"
 
 	svg "github.com/ajstarks/svgo"
@@ -115,22 +114,39 @@ func drawSquig(x int, y int, rad float64, lennt float64, canvas *svg.SVG, color 
 	//rand_color := colors[r1.Intn(len(colors))]
 	//rand_color := colors[0]
 	var squiggly_line []Point = squiggle(rad, lennt)
-	x_pos, y_pos := split_points_slice(squiggly_line, x, y)
+	//x_pos, y_pos := split_points_slice(squiggly_line, x, y)
 	//fmt.Printf("LEN OF POINTS IS %d\n", len(squiggly_line))
 	for i := 0; i < len(squiggly_line); i++ {
 
-		fmt.Printf("X: %d, Y: %d\n", x_pos[i], y_pos[i])
+		// fmt.Printf("[I:%d] - X: %d, Y: %d\n", i, x_pos[i], y_pos[i])
 
 		// start control point
-		//const [cpsX, cpsY] = controlPoint(a[i - 1], a[i - 2], point)
+		var dummy_control Point
+		if i > 0 && i < len(squiggly_line)-1 {
+			start_control = controlPoint(squiggly_line[i], squiggly_line[i-1], squiggly_line[i+1], false)
+		} else if i == 0 {
+			start_control = controlPoint(squiggly_line[i], {0,0}, squiggly_line[i+1], false)
+		}
+		fmt.Printf("  STartControl X: %f Y: %f\n", start_control.x, start_control.y)
 		// end control point
-		//const [cpeX, cpeY] = controlPoint(point, a[i - 1], a[i + 1], true)
+		end_control := Point{0, 0}
+		if i > 0 && i < len(squiggly_line)-2 {
+			end_control = controlPoint(squiggly_line[i+1], squiggly_line[i], squiggly_line[i+2], true)
+		}
+		fmt.Printf("  EndControl X: %f Y: %f\n", end_control.x, end_control.y)
+
+		end_point := squiggly_line[0]
+		if i < len(squiggly_line)-1 {
+			end_point = squiggly_line[i+1]
+		}
+		fmt.Printf("Sx:%f Sy:%f Cx:%f Cy:%f Px:%f Py:%f Ex:%f Ey:%f\n", squiggly_line[i].x, squiggly_line[i].y, start_control.x, start_control.y, end_control.x, end_control.y, end_point.x, end_point.y)
+		canvas.Bezier(int(squiggly_line[i].x), int(squiggly_line[i].y), int(start_control.x), int(start_control.y), int(end_control.x), int(end_control.y), int(end_point.x), int(end_point.y))
 	}
-	canvas.Polyline(x_pos, y_pos, "fill:none; stroke:"+color)
+	// canvas.Polyline(x_pos, y_pos, "fill:none; stroke:"+color)
 }
 
-func OpenCreateFile(filename string) *os.File {
-	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0755)
+func NewFile(filename string) *os.File {
+	f, err := os.Create(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -142,26 +158,26 @@ func main() {
 	colors := [...]string{"chartreuse", "greenyellow", "lawngreen", "fuchsia", "yello", "black"}
 	// num_draws := r1.Intn(18) + 3
 	// num_draws := 3
-	num_squigs := 3
+	num_squigs := 2
 	incr := width / num_squigs
 
 	//for i := 0; i < num_draws; i++ {
 
 	//fname := "blah" + strconv.Itoa(i) + ".svg"
 	fname := "blah.svg"
-	f := OpenCreateFile(fname)
+	f := NewFile(fname)
 
 	canvas := svg.New(f)
 	canvas.Start(width, height)
 	canvas.RGB(0, 0, 0)
 
-	for j := 0; j < num_squigs; j++ {
+	for j := 1; j < num_squigs; j++ {
 		drawSquig(j*incr+10, j*incr+10, float64(50), float64(500), canvas, colors[3])
-		drawSquig(width-j*incr, height-j*incr+50, float64(10), float64(1500), canvas, colors[5])
+		// drawSquig(width-j*incr, height-j*incr+50, float64(10), float64(1500), canvas, colors[5])
 	}
 
-	rand_color := colors[r1.Intn(len(colors))]
-	canvas.Grid(0, 0, width, height, 10, "stroke:"+rand_color+"; opacity:0.1i; stroke-width="+strconv.Itoa(r1.Intn(10)))
+	// rand_color := colors[r1.Intn(len(colors))]
+	// canvas.Grid(0, 0, width, height, 10, "stroke:"+rand_color+"; opacity:0.1i; stroke-width="+strconv.Itoa(r1.Intn(10)))
 
 	canvas.End()
 	//}
