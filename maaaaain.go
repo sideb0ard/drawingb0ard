@@ -51,7 +51,7 @@ func points_length(points []Point) float64 {
 	return length
 }
 
-func squiggle(radius float64, length float64) []Point {
+func squiggle(x float64, y float64, radius float64, length float64) []Point {
 	points := make([]Point, 0)
 	current_length := 0.
 	current_angle := 0.
@@ -61,8 +61,8 @@ func squiggle(radius float64, length float64) []Point {
 
 	// points = append(points, Point{radius, 0})
 	for current_length < length {
-		new_x := radius * math.Cos(current_angle)
-		new_y := radius * math.Sin(current_angle)
+		new_x := radius*math.Cos(current_angle) + x
+		new_y := radius*math.Sin(current_angle) + y
 		points = append(points, Point{new_x, new_y})
 		current_length = points_length(points)
 		angle_mod := r1.Intn(7) + 1
@@ -113,34 +113,54 @@ func drawSquig(x int, y int, rad float64, lennt float64, canvas *svg.SVG, color 
 	//colors := [...]string{"black", "greenyellow", "black"}
 	//rand_color := colors[r1.Intn(len(colors))]
 	//rand_color := colors[0]
-	var squiggly_line []Point = squiggle(rad, lennt)
+	var squiggly_line []Point = squiggle(rad, lennt, float64(x), float64(y))
 	//x_pos, y_pos := split_points_slice(squiggly_line, x, y)
 	//fmt.Printf("LEN OF POINTS IS %d\n", len(squiggly_line))
 	for i := 0; i < len(squiggly_line); i++ {
 
 		// fmt.Printf("[I:%d] - X: %d, Y: %d\n", i, x_pos[i], y_pos[i])
 
-		// start control point
-		var dummy_control Point
-		if i > 0 && i < len(squiggly_line)-1 {
-			start_control = controlPoint(squiggly_line[i], squiggly_line[i-1], squiggly_line[i+1], false)
-		} else if i == 0 {
-			start_control = controlPoint(squiggly_line[i], {0,0}, squiggly_line[i+1], false)
+		var current Point
+		var previous Point
+		var next Point
+		// Start Control Point
+		current = squiggly_line[i]
+		if i > 0 {
+			previous = squiggly_line[i-1]
+		} else {
+			previous = Point{0, 0}
 		}
+		if i < len(squiggly_line)-1 {
+			next = squiggly_line[i+1]
+		} else {
+			next = Point{0, 0}
+		}
+
+		start_control := controlPoint(current, previous, next, false)
 		fmt.Printf("  STartControl X: %f Y: %f\n", start_control.x, start_control.y)
+
 		// end control point
-		end_control := Point{0, 0}
-		if i > 0 && i < len(squiggly_line)-2 {
-			end_control = controlPoint(squiggly_line[i+1], squiggly_line[i], squiggly_line[i+2], true)
+		previous = squiggly_line[i]
+		if i < len(squiggly_line)-3 {
+			current = squiggly_line[i+1]
+			next = squiggly_line[i+2]
+		} else if i < len(squiggly_line)-2 {
+			current = squiggly_line[i+1]
+			next = Point{0, 0}
+		} else {
+			current = Point{0, 0}
+			next = Point{0, 0}
 		}
+
+		end_control := controlPoint(current, previous, next, true)
 		fmt.Printf("  EndControl X: %f Y: %f\n", end_control.x, end_control.y)
 
 		end_point := squiggly_line[0]
 		if i < len(squiggly_line)-1 {
 			end_point = squiggly_line[i+1]
 		}
-		fmt.Printf("Sx:%f Sy:%f Cx:%f Cy:%f Px:%f Py:%f Ex:%f Ey:%f\n", squiggly_line[i].x, squiggly_line[i].y, start_control.x, start_control.y, end_control.x, end_control.y, end_point.x, end_point.y)
-		canvas.Bezier(int(squiggly_line[i].x), int(squiggly_line[i].y), int(start_control.x), int(start_control.y), int(end_control.x), int(end_control.y), int(end_point.x), int(end_point.y))
+		fmt.Printf("X:%d Y:%d Sx:%f Sy:%f Cx:%f Cy:%f Px:%f Py:%f Ex:%f Ey:%f\n", x, y, squiggly_line[i].x, squiggly_line[i].y, start_control.x, start_control.y, end_control.x, end_control.y, end_point.x, end_point.y)
+		canvas.Bezier(int(squiggly_line[i].x), int(squiggly_line[i].y), int(start_control.x), int(start_control.y), int(end_control.x), int(end_control.y), int(end_point.x), int(end_point.y), "stroke:"+color)
 	}
 	// canvas.Polyline(x_pos, y_pos, "fill:none; stroke:"+color)
 }
@@ -157,22 +177,21 @@ func main() {
 
 	colors := [...]string{"chartreuse", "greenyellow", "lawngreen", "fuchsia", "yello", "black"}
 	// num_draws := r1.Intn(18) + 3
-	// num_draws := 3
 	num_squigs := 2
 	incr := width / num_squigs
 
-	//for i := 0; i < num_draws; i++ {
-
-	//fname := "blah" + strconv.Itoa(i) + ".svg"
 	fname := "blah.svg"
 	f := NewFile(fname)
-
 	canvas := svg.New(f)
 	canvas.Start(width, height)
 	canvas.RGB(0, 0, 0)
 
-	for j := 1; j < num_squigs; j++ {
-		drawSquig(j*incr+10, j*incr+10, float64(50), float64(500), canvas, colors[3])
+	for i := 30; i < width; i++ {
+
+		drawSquig(i+incr, i+incr, float64(10), float64(100), canvas, colors[3])
+
+		//for j := 1; j < num_squigs; j++ {
+		//drawSquig(j*incr+10, j*incr+10, float64(50), float64(500), canvas, colors[3])
 		// drawSquig(width-j*incr, height-j*incr+50, float64(10), float64(1500), canvas, colors[5])
 	}
 
