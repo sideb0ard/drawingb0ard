@@ -6,6 +6,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
 
 	svg "github.com/ajstarks/svgo"
@@ -175,29 +176,30 @@ func NewFile(filename string) *os.File {
 
 func main() {
 
-	colors := [...]string{"chartreuse", "greenyellow", "lawngreen", "fuchsia", "yello", "black"}
+	colors := [...]string{"chartreuse", "greenyellow", "lawngreen", "fuchsia", "yellow", "black"}
 	// num_draws := r1.Intn(18) + 3
 	num_squigs := 2
 	incr := width / num_squigs
 
-	fname := "blah.svg"
-	f := NewFile(fname)
-	canvas := svg.New(f)
-	canvas.Start(width, height)
-	canvas.RGB(0, 0, 0)
+	nom := 1
+	for j := 0; j < 10; j++ {
 
-	for i := 30; i < width; i++ {
+		f := NewFile(strconv.Itoa(nom) + ".svg")
+		nom++
+		canvas := svg.New(f)
+		canvas.Start(width, height)
+		canvas.RGB(0, 0, 0)
 
-		drawSquig(i+incr, i+incr, float64(10), float64(100), canvas, colors[3])
+		for i := 30; i < width; i++ {
 
-		//for j := 1; j < num_squigs; j++ {
-		//drawSquig(j*incr+10, j*incr+10, float64(50), float64(500), canvas, colors[3])
-		// drawSquig(width-j*incr, height-j*incr+50, float64(10), float64(1500), canvas, colors[5])
+			//rand_color := colors[r1.Intn(len(colors))]
+			drawSquig(i+incr, i+incr, float64(10), float64(100), canvas, colors[3])
+
+		}
+
+		// canvas.Grid(0, 0, width, height, 10, "stroke:"+rand_color+"; opacity:0.1i; stroke-width="+strconv.Itoa(r1.Intn(10)))
+
+		canvas.End()
 	}
-
-	// rand_color := colors[r1.Intn(len(colors))]
-	// canvas.Grid(0, 0, width, height, 10, "stroke:"+rand_color+"; opacity:0.1i; stroke-width="+strconv.Itoa(r1.Intn(10)))
-
-	canvas.End()
 	//}
 }
