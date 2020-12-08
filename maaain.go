@@ -44,17 +44,20 @@ func AdjustPoint(point library.Point, x int, y int) library.Point {
 }
 
 func DrawCurvedLine(x int, y int, squig []library.Point, color string) {
+	//fmt.Printf("Curved! x:%d y:%d\n", x, y)
 	// xpos, ypos := library.SplitPointsSlice(squig)
 	// tx := Map(xpos, func(val int) int { return val + x })
 	// ty := Map(ypos, func(val int) int { return val + y })
 
+	//fmt.Printf("X:%d Y:%d\n", x, y)
 	for i := 0; i < len(squig); i++ {
 
-		var current library.Point
+		// fmt.Printf("Start is x:%f y:%f\n", squig[i].X, squig[i].Y)
+		start_point := AdjustPoint(squig[i], x, y)
+		// fmt.Printf("Start_POINT is x:%f y:%f\n", start_point.X, start_point.Y)
 		var previous library.Point
 		var next library.Point
 		// Start Control Point
-		current = AdjustPoint(squig[i], x, y)
 		if i > 0 {
 			previous = AdjustPoint(squig[i-1], x, y)
 		}
@@ -62,27 +65,30 @@ func DrawCurvedLine(x int, y int, squig []library.Point, color string) {
 			next = AdjustPoint(squig[i+1], x, y)
 		}
 
-		start_control := library.ControlPoint(current, previous, next, false)
+		//fmt.Println("START CONTROL:")
+		start_control := library.ControlPoint(start_point, previous, next, false)
 
 		// end control point
 		var ecurrent library.Point
-		var eprevious library.Point
 		var enext library.Point
 
-		eprevious = squig[i]
 		if i < len(squig)-3 {
 			ecurrent = AdjustPoint(squig[i+1], x, y)
 			enext = AdjustPoint(squig[i+2], x, y)
 		} else if i < len(squig)-2 {
 			ecurrent = AdjustPoint(squig[i+1], x, y)
+		} else {
+			ecurrent = start_point
 		}
 
-		end_control := library.ControlPoint(ecurrent, eprevious, enext, true)
-		end_point := AdjustPoint(squig[0], x, y)
+		//fmt.Println("END CONTROL:")
+		end_control := library.ControlPoint(ecurrent, start_point, enext, true)
+		end_point := AdjustPoint(squig[i], x, y)
 		if i < len(squig)-1 {
 			end_point = AdjustPoint(squig[i+1], x, y)
 		}
-		canvas.Bezier(int(squig[i].X), int(squig[i].Y), int(start_control.X), int(start_control.Y), int(end_control.X), int(end_control.Y), int(end_point.X), int(end_point.Y), "stroke:"+color)
+
+		canvas.Bezier(int(start_point.X), int(start_point.Y), int(start_control.X), int(start_control.Y), int(end_control.X), int(end_control.Y), int(end_point.X), int(end_point.Y), "fill:none; stroke:"+color)
 	}
 }
 

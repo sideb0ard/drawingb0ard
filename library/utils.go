@@ -40,14 +40,18 @@ func PropertiesOfLine(start, end Point) LineProperty {
 // https://medium.com/@francoisromain/smooth-a-svg-path-with-cubic-bezier-curves-e37b49d46c74
 func ControlPoint(current Point, previous Point, next Point, reverse bool) Point {
 
+	//fmt.Printf("CURRNT.x:%f y:%f Prev.x:%f y:%f Next.x:%f y:%f\n", current.X, current.Y, previous.X, previous.Y, next.X, next.Y)
 	p := previous
 	if p.X == 0 && p.Y == 0 {
+		//	fmt.Println("UF, PREV is empty - making P=CURRENT")
 		p = current
 	}
 	n := next
 	if n.X == 0 && n.Y == 0 {
+		//	fmt.Println("UF, NEXT is empty - making n=CURRENT")
 		n = current
 	}
+	//fmt.Printf("Previous X:%f Y:%f // Next.X:%f Y:%f\n", p.X, p.Y, n.X, n.Y)
 	const smoothing = 0.2
 	o := PropertiesOfLine(p, n)
 	angle := o.angle
